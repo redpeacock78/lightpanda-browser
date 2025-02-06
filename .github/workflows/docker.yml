@@ -1,0 +1,61 @@
+name: Push to Docker registry
+
+on:
+  push:
+    branches:
+      - docker
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - amd64
+        registry:
+          - github
+    steps:
+      - name: Create Arch Tag
+        run: |
+          echo "arch_tag=$(echo "${{ matrix.arch }}"|tr -d '/')" >> "${GITHUB_ENV}"
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ github.ref }}-${{ env.arch_tag }}-${{ github.sha }}
+          restore-keys: ${{ github.ref }}-${{ env.arch_tag }}-
+      - name: Login to GitHub Container Registry
+        if: ${{ matrix.registry == 'github' }}
+        uses: docker/login-action@v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: linux/${{ matrix.arch }}
+      - name: Setup Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3.8.0
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5.6.1
+        with:
+          images: ghcr.io/${{ github.repository }}
+      - name: Build and Push to GitHub Container Registry
+        if: ${{ matrix.registry == 'github' }}
+        uses: docker/build-push-action@v6.13.0
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+
