@@ -35,7 +35,7 @@ const version = @import("build_info").git_commit;
 
 const log = std.log.scoped(.cli);
 
-pub const std_options = .{
+pub const std_options = std.Options{
     // Set the log level to info
     .log_level = .debug,
 
@@ -75,7 +75,7 @@ pub fn main() !void {
             app.telemetry.record(.{ .run = {} });
 
             const timeout = std.time.ns_per_s * @as(u64, opts.timeout);
-            server.run(&app, address, timeout) catch |err| {
+            server.run(app, address, timeout) catch |err| {
                 log.err("Server error", .{});
                 return err;
             };
@@ -92,7 +92,7 @@ pub fn main() !void {
             defer vm.deinit();
 
             // browser
-            var browser = Browser.init(&app);
+            var browser = Browser.init(app);
             defer browser.deinit();
 
             var session = try browser.newSession({});
@@ -344,7 +344,7 @@ fn parseFetchArgs(
 var verbose: bool = builtin.mode == .Debug; // In debug mode, force verbose.
 fn logFn(
     comptime level: std.log.Level,
-    comptime scope: @Type(.EnumLiteral),
+    comptime scope: @Type(.enum_literal),
     comptime format: []const u8,
     args: anytype,
 ) void {
