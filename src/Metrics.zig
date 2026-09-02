@@ -94,6 +94,8 @@ robots_access: CounterEnum("result", enum { allow, deny }) = .{},
 cors_check: CounterEnum("result", enum { same_origin, no_cors, simple, preflight }) = .{},
 cors_preflight: CounterEnum("result", enum { allowed, blocked }) = .{},
 cors_response: CounterEnum("result", enum { allowed, blocked }) = .{},
+adblock_verdicts: CounterEnum("verdict", @import("network/adblock/AdBlocker.zig").Verdict) = .{},
+adblock_rules: GaugeEnum("state", enum { loaded, skipped }) = .{},
 
 // Emitted as each metric's "# HELP" line. A field without an entry is a
 // compile error.
@@ -129,6 +131,8 @@ const help = .{
     .cors_check = "CORS initial classification: same_origin/no_cors need no CORS handling, simple needs response validation only, preflight needs an OPTIONS round-trip first",
     .cors_preflight = "CORS preflight (OPTIONS) results, one per request that required one",
     .cors_response = "CORS actual-response validation results",
+    .adblock_verdicts = "Adblocker decisions for evaluated requests, by verdict (none = no filter matched)",
+    .adblock_rules = "Filter-list rules by fate: loaded into the matcher, or skipped as unsupported",
 };
 
 pub fn write(self: *const Metrics, writer: *std.Io.Writer) void {
@@ -216,6 +220,10 @@ fn GaugeEnum(comptime label: []const u8, comptime T: type) type {
 
         pub fn decr(self: *Self, tag: T) void {
             self.values.getPtr(tag).decr();
+        }
+
+        pub fn add(self: *Self, tag: T, n: i64) void {
+            self.values.getPtr(tag).add(n);
         }
 
         fn write(self: *const Self, comptime name: []const u8, comptime help_text: []const u8, writer: *std.Io.Writer) !void {
