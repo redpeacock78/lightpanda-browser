@@ -95,7 +95,7 @@ cors_check: CounterEnum("result", enum { same_origin, no_cors, simple, preflight
 cors_preflight: CounterEnum("result", enum { allowed, blocked }) = .{},
 cors_response: CounterEnum("result", enum { allowed, blocked }) = .{},
 adblock_verdicts: CounterEnum("verdict", @import("network/adblock/AdBlocker.zig").Verdict) = .{},
-adblock_rules: GaugeEnum("state", enum { loaded, skipped }) = .{},
+adblock_rules: GaugeEnum("state", enum { loaded, skipped, cosmetic }) = .{},
 
 // Emitted as each metric's "# HELP" line. A field without an entry is a
 // compile error.
@@ -131,8 +131,8 @@ const help = .{
     .cors_check = "CORS initial classification: same_origin/no_cors need no CORS handling, simple needs response validation only, preflight needs an OPTIONS round-trip first",
     .cors_preflight = "CORS preflight (OPTIONS) results, one per request that required one",
     .cors_response = "CORS actual-response validation results",
-    .adblock_verdicts = "Adblocker decisions for evaluated requests, by verdict (none = no filter matched)",
-    .adblock_rules = "Filter-list rules by fate: loaded into the matcher, or skipped as unsupported",
+    .adblock_verdicts = "Adblocker decisions for evaluated requests, by verdict (none = not blocked, allowed = an exception overrode a block)",
+    .adblock_rules = "Filter-list rules by fate: loaded into the matcher, skipped as unsupported, or cosmetic (domain-scoped element hiding, outside the network realm)",
 };
 
 pub fn write(self: *const Metrics, writer: *std.Io.Writer) void {
