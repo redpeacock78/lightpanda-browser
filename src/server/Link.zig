@@ -330,8 +330,11 @@ test "link: send gives up when the peer stops reading" {
     // only half-closes the read side, hangs the whole process on SIGINT.
     try testing.expectError(error.Timeout, link.send(payload));
 
-    // and the run loop's reads share the fd: it must still be non-blocking
-    try testing.expectEqual(flags | nonblocking, try sys_net.fcntl(pair[1], posix.F.GETFL, 0));
+    // and the run loop's reads share the fd: it must still be non-blocking.
+    // Only the bit, not the whole word: macOS leaks FWASWRITTEN (0x10000)
+    // into F_GETFL once the fd has been written to.
+    const after = try sys_net.fcntl(pair[1], posix.F.GETFL, 0);
+    try testing.expectEqual(nonblocking, after & nonblocking);
 }
 
 test "link: stops reading once the worker's inbox backs up" {
