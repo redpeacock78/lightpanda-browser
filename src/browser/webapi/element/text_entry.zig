@@ -30,7 +30,7 @@ const InputEvent = @import("../event/InputEvent.zig");
 pub fn TextEntry(comptime T: type) type {
     return struct {
         pub fn select(self: *T, frame: *Frame) !void {
-            const len = if (self._value) |v| @as(u32, @intCast(v.len)) else 0;
+            const len: u32 = @intCast(self.getValue().len);
             try setSelectionRange(self, 0, len, null, frame);
             const event = try Event.init("select", .{ .bubbles = true }, frame._page);
             try frame._event_manager.dispatch(self.asElement().asEventTarget(), event);
@@ -165,14 +165,7 @@ pub fn TextEntry(comptime T: type) type {
                 } else break :blk .none;
             };
 
-            const value = self._value orelse {
-                self._selection_start = 0;
-                self._selection_end = 0;
-                self._selection_direction = .none;
-                return;
-            };
-
-            const len_u32: u32 = @intCast(value.len);
+            const len_u32: u32 = @intCast(self.getValue().len);
             var start: u32 = if (selection_start > len_u32) len_u32 else selection_start;
             const end: u32 = if (selection_end > len_u32) len_u32 else selection_end;
 
@@ -194,15 +187,17 @@ pub fn TextEntry(comptime T: type) type {
             if (self.selectionAvailable() == false) {
                 return .none;
             }
-            const value = self._value orelse return .none;
+            const value_len: u32 = @intCast(self.getValue().len);
+            const start = @min(self._selection_start, value_len);
+            const end = @min(self._selection_end, value_len);
 
-            if (self._selection_start == self._selection_end) {
+            if (start == end) {
                 return .none;
             }
-            if (self._selection_start == 0 and self._selection_end == value.len) {
+            if (start == 0 and end == value_len) {
                 return .full;
             }
-            return .{ .partial = .{ self._selection_start, self._selection_end } };
+            return .{ .partial = .{ start, end } };
         }
 
         fn dispatchSelectionChangeEvent(self: *T, frame: *Frame) !void {

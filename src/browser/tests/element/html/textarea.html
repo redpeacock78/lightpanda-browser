@@ -230,6 +230,42 @@
   }
 </script>
 
+<script id="selection_uses_current_value">
+  {
+    // A <textarea>'s API value is its raw value, which comes from its child
+    // text node until something assigns to `value`. The selection APIs clamp
+    // against that value, not against an assigned one.
+    // https://html.spec.whatwg.org/#dom-textarea-value
+    // https://html.spec.whatwg.org/#dom-textarea/input-setselectionrange
+    const host = document.createElement('div');
+    host.innerHTML = '<textarea>abcdef</textarea>';
+    document.body.appendChild(host);
+    const parsed = host.firstChild;
+
+    parsed.select();
+    testing.expectEqual(0, parsed.selectionStart);
+    testing.expectEqual(6, parsed.selectionEnd);
+
+    parsed.setSelectionRange(2, 4, 'backward');
+    testing.expectEqual(2, parsed.selectionStart);
+    testing.expectEqual(4, parsed.selectionEnd);
+    testing.expectEqual('backward', parsed.selectionDirection);
+
+    // Offsets past the end clamp to the length of the value.
+    parsed.setSelectionRange(99, 99);
+    testing.expectEqual(6, parsed.selectionStart);
+    testing.expectEqual(6, parsed.selectionEnd);
+
+    // Same when the default value came from the defaultValue setter.
+    const seeded = document.createElement('textarea');
+    document.body.appendChild(seeded);
+    seeded.defaultValue = 'hello';
+    seeded.select();
+    testing.expectEqual(0, seeded.selectionStart);
+    testing.expectEqual(5, seeded.selectionEnd);
+  }
+</script>
+
 <script id="select_event">
   {
     const textarea = document.createElement('textarea');

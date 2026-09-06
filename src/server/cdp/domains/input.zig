@@ -478,3 +478,47 @@ test "cdp.input: dispatchKeyEvent beforeinput can veto the edit" {
         \\clone.value === 'abc' && window.seen.join(',') === 'input:false'
     , null)).isTrue());
 }
+
+test "cdp.input: editing keys honor the selection of a default-valued textarea" {
+    var ctx = try testing.context();
+    defer ctx.deinit();
+
+    const bc = try ctx.loadBrowserContext(.{});
+    const page = try bc.session.createPage();
+    const frame = page.frame().?;
+
+    try frame.navigate("http://localhost:9582/src/browser/tests/mcp_actions.html", .{ .reason = .address_bar, .kind = .{ .push = null } });
+    try testing.waitForPage(bc);
+
+    var ls: lp.js.Local.Scope = undefined;
+    frame.js.localScope(&ls);
+    defer ls.deinit();
+
+    // This <textarea>'s value comes from its child text node — nothing assigns
+    // to `value` — so the selection has to clamp against the parsed text.
+    _ = try ls.local.compileAndRun(
+        \\document.body.innerHTML = '<textarea id="ta">abcdef</textarea>';
+        \\const ta = document.getElementById('ta');
+        \\ta.focus();
+        \\ta.setSelectionRange(2, 4);
+    , null);
+    try testing.expect((try ls.local.compileAndRun("ta.selectionStart === 2 && ta.selectionEnd === 4", null)).isTrue());
+
+    // Backspace over a range deletes the range, leaving the caret at its start.
+    try ctx.processMessage(.{
+        .id = 1,
+        .method = "Input.dispatchKeyEvent",
+        .params = .{ .type = "keyDown", .key = "Backspace", .code = "Backspace" },
+    });
+    try testing.expect((try ls.local.compileAndRun("ta.value === 'abef'", null)).isTrue());
+    try testing.expect((try ls.local.compileAndRun("ta.selectionStart === 2 && ta.selectionEnd === 2", null)).isTrue());
+
+    // Collapsed caret: Backspace removes the character on its left.
+    _ = try ls.local.compileAndRun("ta.setSelectionRange(3, 3)", null);
+    try ctx.processMessage(.{
+        .id = 2,
+        .method = "Input.dispatchKeyEvent",
+        .params = .{ .type = "keyDown", .key = "Backspace", .code = "Backspace" },
+    });
+    try testing.expect((try ls.local.compileAndRun("ta.value === 'abf'", null)).isTrue());
+}
