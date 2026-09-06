@@ -79,16 +79,24 @@ pub fn getValue(self: *const TextArea) []const u8 {
 }
 
 pub fn setValue(self: *TextArea, value: []const u8, frame: *Frame) !void {
+    const changed = std.mem.eql(u8, self.getValue(), value) == false;
+    if (changed == false and self._value != null) {
+        // _value itself isn't changing (not to be mixed up with setValue
+        // being called with the same as the default value, which would need
+        // to dupe)
+        self._user_edited = false;
+        return;
+    }
     const owned = try frame.arena.dupe(u8, value);
     self._value = owned;
     self._user_edited = false;
 
-    // "move the text entry cursor position to the end of the text control,
-    // unselecting any selected text and resetting the selection direction to
-    // 'none'" -- https://html.spec.whatwg.org/#dom-textarea-value
-    self._selection_start = @intCast(owned.len);
-    self._selection_end = @intCast(owned.len);
-    self._selection_direction = .none;
+    // move the text entry cursor position to the end of the text control
+    if (changed) {
+        self._selection_start = @intCast(owned.len);
+        self._selection_end = @intCast(owned.len);
+        self._selection_direction = .none;
+    }
 }
 
 pub fn setUserValue(self: *TextArea, value: []const u8, frame: *Frame) !void {

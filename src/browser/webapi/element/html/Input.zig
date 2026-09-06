@@ -157,14 +157,20 @@ pub fn setValue(self: *Input, value: []const u8, frame: *Frame) !void {
         return error.InvalidStateError;
     }
     // This should _not_ call setAttribute. It updates the current state only
-    const sanitized = try self.sanitizeValue(true, value, frame);
-    self._value = sanitized;
+    const sanitized = try self.sanitizeValue(false, value, frame);
+    const changed = std.mem.eql(u8, self.getValue(), sanitized) == false;
+    if (changed == false and self._value != null) {
+        // _value itself isn't changing (not to be mixed up with setValue
+        // being called with the same as the default value, which would need
+        // to dupe)
+        self._user_edited = false;
+        return;
+    }
+    self._value = try frame.dupeString(sanitized);
     self._user_edited = false;
 
-    // "move the text entry cursor position to the end of the text control,
-    // unselecting any selected text and resetting the selection direction to
-    // 'none'" -- https://html.spec.whatwg.org/#dom-input-value
-    if (self.selectionAvailable()) {
+    // move the text entry cursor position to the end of the text control
+    if (changed and self.selectionAvailable()) {
         self._selection_start = @intCast(sanitized.len);
         self._selection_end = @intCast(sanitized.len);
         self._selection_direction = .none;

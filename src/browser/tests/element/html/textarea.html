@@ -323,5 +323,23 @@
     testing.expectEqual(5, textarea.selectionStart);
     testing.expectEqual(5, textarea.selectionEnd);
     testing.expectEqual('none', textarea.selectionDirection);
+
+    // Re-assigning the same value leaves the selection alone
+    // (WPT textfieldselection/selection-after-content-change.html).
+    textarea.setSelectionRange(1, 3, 'backward');
+    textarea.value = 'hello';
+    testing.expectEqual(1, textarea.selectionStart);
+    testing.expectEqual(3, textarea.selectionEnd);
+    testing.expectEqual('backward', textarea.selectionDirection);
+
+    // Assigning a value equal to the default is not a change for the caret,
+    // but it still sets the dirty flag: later default edits stay hidden.
+    const dflt = document.createElement('textarea');
+    dflt.defaultValue = 'foo';
+    dflt.value = 'foo';
+    testing.expectEqual(0, dflt.selectionStart);
+    testing.expectEqual(0, dflt.selectionEnd);
+    dflt.defaultValue = 'bar';
+    testing.expectEqual('foo', dflt.value);
   }
 </script>
