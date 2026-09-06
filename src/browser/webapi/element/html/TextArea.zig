@@ -82,6 +82,13 @@ pub fn setValue(self: *TextArea, value: []const u8, frame: *Frame) !void {
     const owned = try frame.arena.dupe(u8, value);
     self._value = owned;
     self._user_edited = false;
+
+    // "move the text entry cursor position to the end of the text control,
+    // unselecting any selected text and resetting the selection direction to
+    // 'none'" -- https://html.spec.whatwg.org/#dom-textarea-value
+    self._selection_start = @intCast(owned.len);
+    self._selection_end = @intCast(owned.len);
+    self._selection_direction = .none;
 }
 
 pub fn setUserValue(self: *TextArea, value: []const u8, frame: *Frame) !void {

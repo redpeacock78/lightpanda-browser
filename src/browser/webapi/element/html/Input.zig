@@ -157,8 +157,18 @@ pub fn setValue(self: *Input, value: []const u8, frame: *Frame) !void {
         return error.InvalidStateError;
     }
     // This should _not_ call setAttribute. It updates the current state only
-    self._value = try self.sanitizeValue(true, value, frame);
+    const sanitized = try self.sanitizeValue(true, value, frame);
+    self._value = sanitized;
     self._user_edited = false;
+
+    // "move the text entry cursor position to the end of the text control,
+    // unselecting any selected text and resetting the selection direction to
+    // 'none'" -- https://html.spec.whatwg.org/#dom-input-value
+    if (self.selectionAvailable()) {
+        self._selection_start = @intCast(sanitized.len);
+        self._selection_end = @intCast(sanitized.len);
+        self._selection_direction = .none;
+    }
 }
 
 pub fn setUserValue(self: *Input, value: []const u8, frame: *Frame) !void {

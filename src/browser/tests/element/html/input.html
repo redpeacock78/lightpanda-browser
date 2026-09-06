@@ -532,3 +532,36 @@
     testing.expectEqual(false, input_checked.checked);
   }
 </script>
+
+<script id="value_setter_moves_caret">
+  {
+    // Setting `value` moves the text entry cursor to the end of the new value,
+    // unselects any selected text and resets the selection direction.
+    // https://html.spec.whatwg.org/#dom-input-value
+    const input = document.createElement('input');
+    input.type = 'text';
+    document.body.appendChild(input);
+
+    input.value = 'abc';
+    testing.expectEqual(3, input.selectionStart);
+    testing.expectEqual(3, input.selectionEnd);
+
+    input.setSelectionRange(1, 2, 'backward');
+    input.value = 'hello';
+    testing.expectEqual(5, input.selectionStart);
+    testing.expectEqual(5, input.selectionEnd);
+    testing.expectEqual('none', input.selectionDirection);
+
+    // The caret follows the _sanitized_ value: a text input strips CR/LF.
+    input.value = 'a\nb';
+    testing.expectEqual(2, input.selectionStart);
+    testing.expectEqual(2, input.selectionEnd);
+
+    // Types with no text entry cursor keep reporting null rather than a number.
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.value = 'on';
+    testing.expectEqual(null, check.selectionStart);
+    testing.expectEqual(null, check.selectionEnd);
+  }
+</script>
