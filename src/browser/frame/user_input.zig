@@ -634,7 +634,7 @@ pub fn handleKeydown(frame: *Frame, target: *Node, event: *Event) !void {
             return;
         }
 
-        return editKey(frame, event, input, key);
+        return editKey(frame, keyboard_event, input, key);
     }
 
     if (target.is(Element.Html.TextArea)) |textarea| {
@@ -645,12 +645,22 @@ pub fn handleKeydown(frame: *Frame, target: *Node, event: *Event) !void {
             return;
         }
 
-        return editKey(frame, event, textarea, key);
+        return editKey(frame, keyboard_event, textarea, key);
     }
 }
 
 // edit keys are handled by Input and TextArea the same
-fn editKey(frame: *Frame, event: *Event, ctl: anytype, key: KeyboardEvent.Key) !void {
+fn editKey(frame: *Frame, keyboard_event: *KeyboardEvent, ctl: anytype, key: KeyboardEvent.Key) !void {
+    const event = keyboard_event.asEvent();
+
+    if (caretMove(key, ctl)) |move| {
+        // Word/paragraph motions (ctrl/alt/meta variants) aren't modeled.
+        if (keyboard_event.getCtrlKey() or keyboard_event.getAltKey() or keyboard_event.getMetaKey()) {
+            return;
+        }
+        return ctl.moveCaret(move, keyboard_event.getShiftKey(), frame);
+    }
+
     if (key == .Backspace or key == .Delete) {
         const forward = key == .Delete;
         if (try allowEdit(frame, event, ctl.asElement(), null, null, deleteInputType(forward))) {
@@ -664,6 +674,21 @@ fn editKey(frame: *Frame, event: *Event, ctl: anytype, key: KeyboardEvent.Key) !
             try ctl.innerInsert(key.asString(), frame);
         }
     }
+}
+
+// Caret movement a key's default action performs on `ctl`, if any. On a
+// single-line <input> ArrowUp/ArrowDown go to the ends of the value, as in
+// Chrome; on a <textarea> they would need line geometry, so they do nothing.
+fn caretMove(key: KeyboardEvent.Key, ctl: anytype) ?@TypeOf(ctl.*).CaretMove {
+    return switch (key) {
+        .ArrowLeft => .backward,
+        .ArrowRight => .forward,
+        .Home => .line_start,
+        .End => .line_end,
+        .ArrowUp => if (@TypeOf(ctl) == *Element.Html.Input) .line_start else null,
+        .ArrowDown => if (@TypeOf(ctl) == *Element.Html.Input) .line_end else null,
+        else => null,
+    };
 }
 
 fn deleteInputType(forward: bool) []const u8 {
