@@ -331,10 +331,9 @@ test "link: send gives up when the peer stops reading" {
     try testing.expectError(error.Timeout, link.send(payload));
 
     // and the run loop's reads share the fd: it must still be non-blocking.
-    // Only the bit, not the whole word: macOS leaks FWASWRITTEN (0x10000)
-    // into F_GETFL once the fd has been written to.
+    // Bit test, not equality: macOS adds an internal bit to F_GETFL after a write.
     const after = try sys_net.fcntl(pair[1], posix.F.GETFL, 0);
-    try testing.expectEqual(nonblocking, after & nonblocking);
+    try testing.expect(after & nonblocking != 0);
 }
 
 test "link: stops reading once the worker's inbox backs up" {
