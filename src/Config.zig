@@ -652,7 +652,7 @@ pub fn httpNavBurst(self: *const Config) u32 {
 
 pub fn httpConnectTimeout(self: *const Config) u31 {
     return switch (self.mode) {
-        inline .serve, .fetch, .mcp, .agent => |opts| opts.http_connect_timeout orelse 0,
+        inline .serve, .fetch, .mcp, .agent => |opts| opts.http_connect_timeout orelse 8000,
         .version => 0,
         else => unreachable,
     };
@@ -660,7 +660,7 @@ pub fn httpConnectTimeout(self: *const Config) u31 {
 
 pub fn httpTimeout(self: *const Config) u31 {
     return switch (self.mode) {
-        inline .serve, .fetch, .mcp, .agent => |opts| opts.http_timeout orelse 5000,
+        inline .serve, .fetch, .mcp, .agent => |opts| opts.http_timeout orelse 15000,
         .version => 5000,
         else => unreachable,
     };
