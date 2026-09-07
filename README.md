@@ -243,10 +243,8 @@ Set `LIGHTPANDA_DISABLE_CORE_DUMP` (to any value) to suppress crash core dumps b
 
 ## Status
 
-Lightpanda is in Beta and currently a work in progress. Stability and coverage are improving and many websites now work.
-You may still encounter errors or crashes. Please open an issue with specifics if so.
-
-Here are the key features we have implemented:
+Here are the key features we have implemented.
+For full details, see our [Web Platform Tests results](https://perf.lightpanda.io/wpt).
 
 - [x] CORS (enable with `--experimental-features cors`)
 - [x] HTTP loader ([Libcurl](https://curl.se/libcurl/))
@@ -266,8 +264,6 @@ Here are the key features we have implemented:
 - [x] Proxy support
 - [x] Network interception
 - [x] Respect `robots.txt` with option `--obey-robots`
-
-NOTE: There are hundreds of Web APIs. Developing a browser (even just for headless mode) is a huge task. Coverage will increase over time.
 
 ## Build from sources
 
