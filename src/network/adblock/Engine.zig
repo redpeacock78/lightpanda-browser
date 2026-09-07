@@ -145,6 +145,7 @@ pub const Request = struct {
             .xhr, .fetch => .{ .xmlhttprequest = true },
             .image => .{ .image = true },
             .eventsource => .{ .other = true },
+            .worker => .{ .script = true },
         };
 
         return .init(url, source, resource_type);

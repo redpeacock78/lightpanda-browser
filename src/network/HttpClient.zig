@@ -4264,6 +4264,9 @@ fn testIsUrlBlocked(client: *const Client, opts: TestRequest) bool {
         .req = .{
             .method = .GET,
             .url = opts.url,
+            .origin = null,
+            .credentials_mode = .omit,
+            .request_mode = .no_cors,
             .resource_type = opts.resource_type,
             .internal = opts.internal,
             .shutdown_callback = noopShutdown,
