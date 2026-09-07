@@ -151,6 +151,15 @@ await browser.disconnect();
 ```
 </details>
 
+#### Start a webdriver Bidi server
+
+Use `--protocol webdriver` to enable Bidi support.
+You can start both, CDP and Bidi, with `--protocol webdriver --protocol cdp`
+
+```console
+./lightpanda serve --obey-robots --log-format pretty  --log-level info --host 127.0.0.1 --port 9222 --protocol webdriver
+```
+
 ### Agent mode
 
 `lightpanda agent` lets you drive the browser with a native agent. Describe what
@@ -255,7 +264,7 @@ For full details, see our [Web Platform Tests results](https://perf.lightpanda.i
 - [x] Ajax
   - [x] XHR API
   - [x] Fetch API
-- [x] DOM dump
+- [x] DOM and Markdown dump
 - [x] CDP/websockets server
 - [x] Click
 - [x] Input form
@@ -264,6 +273,8 @@ For full details, see our [Web Platform Tests results](https://perf.lightpanda.i
 - [x] Proxy support
 - [x] Network interception
 - [x] Respect `robots.txt` with option `--obey-robots`
+- [x] CDP and Webdriver Bidi
+- [x] Adblocker
 
 ## Build from sources
 
