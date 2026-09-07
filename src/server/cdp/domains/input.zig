@@ -169,7 +169,6 @@ test "cdp.input: insertText is a user edit for tooLong" {
         \\const inp = document.getElementById('inp');
         \\inp.maxLength = 3;
         \\inp.value = 'abcdef';
-        \\inp.setSelectionRange(6, 6); // insertion happens at the caret; the value setter leaves it at 0
         \\inp.focus();
     , null);
     try testing.expect((try ls.local.compileAndRun("inp.validity.tooLong === false", null)).isTrue());
