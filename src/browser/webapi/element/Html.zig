@@ -381,8 +381,16 @@ pub fn insertAdjacentHTML(
     frame: *Frame,
 ) !void {
     const DocumentFragment = @import("../DocumentFragment.zig");
+
+    // The parse context is the node we insert into
+    const context_node, _ = try self.asNode().findAdjacentNodes(position, .html);
+    const context = if (context_node.is(Element)) |el|
+        if (el.is(Element.Html.Html) == null) el else null
+    else
+        null;
+
     const fragment = (try DocumentFragment.init(frame)).asNode();
-    try Frame.parse.htmlAsChildren(frame, fragment, html);
+    try Frame.parse.fragment(frame, fragment, html, .{ .context = context });
 
     const target_node, const prev_node = try self.asNode().findAdjacentNodes(position, .html);
 

@@ -26,26 +26,22 @@ const ShadowRoot = @import("../webapi/ShadowRoot.zig");
 const slotting = @import("../webapi/element/slotting.zig");
 
 pub fn htmlAsChildren(frame: *Frame, node: *Node, html: []const u8) !void {
-    return htmlAsChildrenInner(frame, node, html, .{});
-}
-
-// setHTMLUnsafe variant: parse a fragment that may contain declarative shadow node
-pub fn htmlUnsafeAsChildren(frame: *Frame, node: *Node, html: []const u8) !void {
-    return htmlAsChildrenInner(frame, node, html, .{ .allow_declarative_shadow = true });
+    return fragment(frame, node, html, .{});
 }
 
 // Range.createContextualFragment variant: unlike innerHTML et al., its scripts
 // are run when the fragment is inserted into a document.
 pub fn contextualFragment(frame: *Frame, node: *Node, html: []const u8) !void {
-    return htmlAsChildrenInner(frame, node, html, .{ .scripts_runnable = true });
+    return fragment(frame, node, html, .{ .scripts_runnable = true });
 }
 
-const FragmentParseOpts = struct {
+pub const FragmentParseOpts = struct {
     scripts_runnable: bool = false,
     allow_declarative_shadow: bool = false,
+    context: ?*Element = null, // the parse context when it isn't the supplied `node`
 };
 
-fn htmlAsChildrenInner(frame: *Frame, node: *Node, html: []const u8, opts: FragmentParseOpts) !void {
+pub fn fragment(frame: *Frame, node: *Node, html: []const u8, opts: FragmentParseOpts) !void {
     const previous_parse_mode = frame._parse_mode;
     frame._parse_mode = .fragment;
     defer frame._parse_mode = previous_parse_mode;
@@ -69,7 +65,10 @@ fn htmlAsChildrenInner(frame: *Frame, node: *Node, html: []const u8, opts: Fragm
     frame._fragment_scripts_runnable = opts.scripts_runnable;
     defer frame._fragment_scripts_runnable = previous_scripts_runnable;
 
-    var parser = Parser.init(frame.call_arena, node, frame, .{ .allow_declarative_shadow = opts.allow_declarative_shadow });
+    var parser = Parser.init(frame.call_arena, node, frame, .{
+        .allow_declarative_shadow = opts.allow_declarative_shadow,
+        .context = opts.context,
+    });
     parser.parseFragment(html);
     if (parser.terminated) {
         return error.ExecutionTerminated;

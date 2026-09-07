@@ -570,7 +570,8 @@ pub fn setOuterHTML(self: *Element, html: []const u8, frame: *Frame) !void {
     var fragment: ?*Node = null;
     if (html.len > 0) {
         const frag = (try Node.DocumentFragment.init(frame)).asNode();
-        try Frame.parse.htmlAsChildren(frame, frag, html);
+        // The parent is the parse context (a fragment parent means body).
+        try Frame.parse.fragment(frame, frag, html, .{ .context = parent.is(Element) });
         fragment = frag;
     }
 
@@ -620,13 +621,13 @@ pub fn getHTML(self: *Element, opts: dump.Opts.Shadow.Declarative, writer: *std.
 
 pub fn setInnerHTML(self: *Element, html: []const u8, frame: *Frame) !void {
     const parent = self.asNode();
-    return parent.setHTML(html, false, frame);
+    return parent.setHTML(html, .{}, frame);
 }
 
 /// allows declarative shadow dom
 pub fn setHTMLUnsafe(self: *Element, html: []const u8, frame: *Frame) !void {
     const parent = self.asNode();
-    return parent.setHTML(html, true, frame);
+    return parent.setHTML(html, .{ .allow_declarative_shadow = true }, frame);
 }
 
 pub fn getId(self: *const Element) []const u8 {
