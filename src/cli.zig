@@ -190,6 +190,16 @@ const string = @import("string.zig");
 ///     .help => |tag| printHelp(tag),
 /// }
 /// ```
+pub fn tagNames(comptime E: type) []const []const u8 {
+    return comptime blk: {
+        const fields = @typeInfo(E).@"enum".fields;
+        var names: [fields.len][]const u8 = undefined;
+        for (fields, &names) |f, *n| n.* = f.name;
+        const frozen = names;
+        break :blk &frozen;
+    };
+}
+
 pub fn Builder(comptime commands: anytype) type {
     return struct {
         const Self = @This();
@@ -211,13 +221,7 @@ pub fn Builder(comptime commands: anytype) type {
             break :blk @Enum(Tag, .exhaustive, &names, &std.simd.iota(Tag, len));
         };
 
-        const command_names: []const []const u8 = blk: {
-            var names: []const []const u8 = &.{};
-            for (std.meta.fieldNames(Enum)) |name| {
-                names = names ++ &[_][]const u8{name};
-            }
-            break :blk names;
-        };
+        const command_names = tagNames(Enum);
 
         /// Creates an array of `StructField` out of given options.
         fn optionsToStructFields(comptime options: anytype) [options.len]std.builtin.Type.StructField {
@@ -701,7 +705,12 @@ pub fn Builder(comptime commands: anytype) type {
 
                     const str = args.next() orelse return error.MissingArgument;
                     const v = std.meta.stringToEnum(E, str) orelse {
-                        log.fatal(.app, "invalid option choice", .{ .arg = kebab_cased, .value = str });
+                        const value = log.red(str);
+                        if (string.closest(str, tagNames(E), 2)) |near| {
+                            log.fatal(.app, "invalid option choice", .{ .arg = kebab_cased, .value = value, .did_you_mean = log.green(near) });
+                        } else {
+                            log.fatal(.app, "invalid option choice", .{ .arg = kebab_cased, .value = value });
+                        }
                         return error.InvalidArgument;
                     };
 
