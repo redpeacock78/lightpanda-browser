@@ -32,7 +32,7 @@ See [benchmark details](https://github.com/lightpanda-io/demo/blob/main/BENCHMAR
 
 | Metric | Lightpanda | Headless Chrome | Difference |
 | :---- | :---- | :---- | :---- |
-| Memory (peak, 100 pages) | 123MB | 2GB | ~16 less |
+| Memory (peak, 100 pages) | 123MB | 2GB | ~16x less |
 | Execution time (100 pages) | 5s | 46s | ~9x faster |
 
 ## Quick start
