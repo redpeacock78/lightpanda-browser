@@ -262,9 +262,7 @@ pub fn addEventListener(self: *EventTarget, typ: []const u8, callback_: js.Nulla
         .function => |func| .{ .function = func },
     };
 
-    switch (exec.js.global) {
-        inline else => |g| _ = try g._event_manager.register(self, typ, em_callback, options),
-    }
+    return exec.registerListener(self, typ, em_callback, options);
 }
 
 const RemoveEventListenerOptions = union(enum) {
@@ -298,9 +296,7 @@ pub fn removeEventListener(self: *EventTarget, typ: []const u8, callback_: js.Nu
         };
     };
 
-    switch (exec.js.global) {
-        inline else => |g| g._event_manager.remove(self, typ, em_callback, use_capture),
-    }
+    exec.removeListener(self, typ, em_callback, use_capture);
 }
 
 pub fn format(self: *EventTarget, writer: *std.Io.Writer) !void {
