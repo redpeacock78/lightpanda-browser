@@ -1643,7 +1643,9 @@ fn frameDataCallback(transfer: *HttpClient.Transfer, data: []const u8) !void {
         // to sniff the content type
         var mime: Mime = blk: {
             if (transfer.contentType()) |ct| {
-                break :blk try Mime.parse(ct);
+                // A Content-Type we can't parse must not fail the navigation;
+                // browsers render the page anyway, so fall back to sniffing.
+                break :blk Mime.parseLenient(ct) catch Mime.sniff(data);
             }
             break :blk Mime.sniff(data);
         } orelse .unknown;
