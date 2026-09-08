@@ -444,7 +444,7 @@ pub fn init(self: *Frame, frame_id: u32, page: *Page, opts: InitOpts) !void {
         ._proto = undefined,
         ._document = self.document,
         ._location = undefined,
-        ._performance = .init(factory, arena),
+        ._performance = try .init(factory, arena),
         ._screen = screen,
         ._visual_viewport = visual_viewport,
         ._cross_origin_wrapper = undefined,
@@ -470,7 +470,7 @@ pub fn init(self: *Frame, frame_id: u32, page: *Page, opts: InitOpts) !void {
         .loader_id = self._loader_id,
         .cookie_jar = &session.cookie_jar,
         .notification = session.notification,
-        .performance = &self.window._performance,
+        .performance = self.window._performance,
     };
 
     self._style_manager = try StyleManager.init(self);
@@ -487,7 +487,7 @@ pub fn init(self: *Frame, frame_id: u32, page: *Page, opts: InitOpts) !void {
         .local_arena = self.local_arena,
     });
     errdefer browser.env.destroyContext(self.js);
-    self.window._performance._scheduler = &self.js.scheduler;
+    self.window._performance.attach(self.js);
 
     const location = try Location.init("about:blank", self);
     // We're holding a reference in Zig-side.
@@ -2284,7 +2284,7 @@ pub fn getElementByIdFromNode(self: *Frame, node: *Node, id: []const u8) ?*Eleme
 }
 
 pub fn performance(self: *Frame) *Performance {
-    return &self.window._performance;
+    return self.window._performance;
 }
 
 // Tracks a file input's FileList so its File refs are released at teardown.
