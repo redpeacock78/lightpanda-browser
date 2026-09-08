@@ -782,6 +782,10 @@ fn jsValueToStruct(self: *const Local, comptime T: type, js_val: js.Value) !?T {
             const arr = (try jsValueToTypedArray(ValueType, js_val)) orelse return null;
             return .{ .values = arr };
         },
+        js.BufferSource => {
+            const bytes = (try jsValueToArrayBufferSlice(u8, true, js_val)) orelse return null;
+            return .{ .bytes = bytes };
+        },
         js.Value => js_val,
         js.Value.Global => return try js_val.persist(),
         js.Object => {
@@ -891,7 +895,13 @@ pub fn assertDictionaryFieldOrder(comptime T: type) void {
 }
 
 fn jsValueToTypedArray(comptime T: type, js_val: js.Value) !?[]T {
-    var force_u8 = false;
+    return jsValueToArrayBufferSlice(T, false, js_val);
+}
+
+// With `any_view`, every ArrayBufferView is accepted as a byte slice regardless
+// of its element type
+fn jsValueToArrayBufferSlice(comptime T: type, any_view: bool, js_val: js.Value) !?[]T {
+    var force_u8 = any_view;
     var array_buffer: ?*const v8.ArrayBuffer = null;
     var byte_len: usize = undefined;
     var byte_offset: usize = undefined;
@@ -1517,8 +1527,7 @@ pub fn stackTrace(self: *const Local) !?[]const u8 {
 // When caller catches the error.TypeError, it'll look into env.error_message
 // for the message.
 pub fn typeError(self: *const Local, message: []const u8) error{TypeError} {
-    self.ctx.env.error_message = message;
-    return error.TypeError;
+    return self.ctx.typeError(message);
 }
 
 // == Promise Helpers ==

@@ -1292,3 +1292,9 @@ const UnknownPropertyStat = struct {
     count: usize,
     first_stack: []const u8,
 };
+
+// see Local.typeError
+pub fn typeError(self: *const Context, message: []const u8) error{TypeError} {
+    self.env.error_message = message;
+    return error.TypeError;
+}
