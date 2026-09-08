@@ -1539,6 +1539,15 @@ pub fn createPromiseResolver(self: *const Local) js.PromiseResolver {
 }
 
 pub fn debugValue(self: *const Local, js_val: js.Value, writer: *std.Io.Writer) !void {
+    // _debugValue walks arbitrary, caller-supplied object graphs (e.g. a
+    // rejected promise's reason) via raw property gets. A getter or Proxy
+    // trap encountered along the way can throw; without a TryCatch here,
+    // that leaves the isolate's exception flag set after we return, and the
+    // next unrelated JS entry point trips V8's has_exception() debug check.
+    var try_catch: js.TryCatch = undefined;
+    try_catch.init(self);
+    defer try_catch.deinit();
+
     var seen: std.AutoHashMapUnmanaged(u32, void) = .empty;
     return self._debugValue(js_val, &seen, 0, writer) catch error.WriteFailed;
 }
